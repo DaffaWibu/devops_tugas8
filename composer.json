@@ -1,0 +1,17 @@
+{
+    "name": "your-username/devops_tugas_8",
+    "description": "A simple PHP application for Jenkins pipeline demo",
+    "type": "project",
+    "require": {
+        "php": ">=7.4"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^9.5"
+    },
+    "autoload": {
+        "files": ["index.php"]
+    },
+    "scripts": {
+        "test": "vendor/bin/phpunit --colors"
+    }
+}
