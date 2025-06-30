@@ -57,8 +57,13 @@ pipeline {
 
         stage('Run Unit Tests') {
             steps {
-                // Perbaikan: Panggil PHPUnit secara eksplisit dengan interpreter PHP
-                sh 'php ./vendor/bin/phpunit --colors'
+                sh '''
+                    echo "Running unit tests..."
+                    # Perbaikan: Pastikan executable PHPUnit memiliki izin eksekusi
+                    chmod +x ./vendor/bin/phpunit
+                    # Jalankan PHPUnit secara langsung, tanpa memanggil 'php' di depannya
+                    ./vendor/bin/phpunit --colors
+                '''
             }
             post {
                 success {
@@ -66,6 +71,7 @@ pipeline {
                 }
                 failure {
                     echo 'Tes gagal! Cek log untuk detail.'
+                    // exit 1 // Uncomment ini jika Anda ingin build gagal jika test gagal
                 }
             }
         }
