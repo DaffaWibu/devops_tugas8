@@ -1,10 +1,5 @@
 pipeline {
-    agent {
-        docker {
-            image 'php:8.2-fpm-alpine'
-            args '-u 0:0'
-        }
-    }
+    agent any
 
     environment {
         IMAGE_NAME = "my-php-app"
@@ -21,10 +16,10 @@ pipeline {
         stage('Install Dependencies') {
             steps {
                 sh '''
-                    apk add --no-cache git curl
+                    apk add --no-cache curl git php php-phar php-json php-mbstring
                     curl -sS https://getcomposer.org/installer | php
                     mv composer.phar /usr/local/bin/composer
-                    composer install --no-dev --prefer-dist --optimize-autoloader || echo "Composer gagal!"
+                    composer install --no-dev --prefer-dist --optimize-autoloader
                 '''
             }
         }
@@ -43,13 +38,11 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-                sh '''
-                    docker build -t ${IMAGE_NAME}:${BUILD_NUMBER} .
-                '''
+                sh 'docker build -t ${IMAGE_NAME}:${BUILD_NUMBER} .'
             }
         }
 
-        stage('Deploy Locally') {
+        stage('Deploy') {
             steps {
                 sh '''
                     docker stop ${CONTAINER_NAME} || true
