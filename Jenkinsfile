@@ -59,6 +59,11 @@ pipeline {
             steps {
                 sh '''
                     echo "Running unit tests..."
+                    # Diagnosa: List isi vendor/bin untuk memastikan phpunit ada
+                    echo "Listing contents of vendor/bin/:"
+                    ls -l vendor/bin/
+                    echo "-----------------------------------"
+                    
                     # Perbaikan: Pastikan executable PHPUnit memiliki izin eksekusi
                     chmod +x ./vendor/bin/phpunit
                     # Jalankan PHPUnit secara langsung, tanpa memanggil 'php' di depannya
