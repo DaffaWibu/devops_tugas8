@@ -59,15 +59,26 @@ pipeline {
             steps {
                 sh '''
                     echo "Running unit tests..."
-                    # Diagnosa: List isi vendor/bin untuk memastikan phpunit ada
-                    echo "Listing contents of vendor/bin/:"
-                    ls -l vendor/bin/
+                    echo "--- Diagnosing vendor/ directory ---"
+                    echo "Current directory contents:"
+                    ls -l .
+                    echo "-----------------------------------"
+                    echo "Contents of vendor/ (if it exists):"
+                    ls -l vendor/ || echo "vendor/ directory does not exist or is empty."
+                    echo "-----------------------------------"
+                    echo "Contents of vendor/bin/ (if it exists):"
+                    ls -l vendor/bin/ || echo "vendor/bin/ directory does not exist or is empty."
                     echo "-----------------------------------"
                     
-                    # Perbaikan: Pastikan executable PHPUnit memiliki izin eksekusi
-                    chmod +x ./vendor/bin/phpunit
-                    # Jalankan PHPUnit secara langsung, tanpa memanggil 'php' di depannya
-                    ./vendor/bin/phpunit --colors
+                    # Cek keberadaan PHPUnit dan jalankan
+                    if [ -f ./vendor/bin/phpunit ]; then
+                        echo "PHPUnit executable found. Proceeding with tests."
+                        chmod +x ./vendor/bin/phpunit
+                        ./vendor/bin/phpunit --colors
+                    else
+                        echo "PHPUnit executable NOT found at ./vendor/bin/phpunit. Cannot run tests."
+                        exit 1 # Pastikan stage ini gagal jika PHPUnit tidak ditemukan
+                    fi
                 '''
             }
             post {
@@ -76,7 +87,6 @@ pipeline {
                 }
                 failure {
                     echo 'Tes gagal! Cek log untuk detail.'
-                    // exit 1 // Uncomment ini jika Anda ingin build gagal jika test gagal
                 }
             }
         }
