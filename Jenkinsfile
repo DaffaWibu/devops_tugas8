@@ -1,5 +1,10 @@
 pipeline {
-    agent any
+    agent {
+        docker {
+            image 'php:8.2-cli-alpine'
+            args '-u 0:0'
+        }
+    }
 
     environment {
         IMAGE_NAME = "my-php-app"
@@ -9,14 +14,14 @@ pipeline {
     stages {
         stage('Clone Repository') {
             steps {
-                git 'https://github.com/DaffaWibu/devops_tugas8.git'
+                git branch: 'main', url: 'https://github.com/DaffaWibu/devops_tugas8.git'
             }
         }
 
         stage('Install Dependencies') {
             steps {
                 sh '''
-                    apk add --no-cache curl git php php-phar php-json php-mbstring
+                    apk add --no-cache curl git zip unzip
                     curl -sS https://getcomposer.org/installer | php
                     mv composer.phar /usr/local/bin/composer
                     composer install --no-dev --prefer-dist --optimize-autoloader
@@ -37,12 +42,15 @@ pipeline {
         }
 
         stage('Build Docker Image') {
+            // Jalankan di agent default agar bisa pakai Docker
+            agent any
             steps {
                 sh 'docker build -t ${IMAGE_NAME}:${BUILD_NUMBER} .'
             }
         }
 
         stage('Deploy') {
+            agent any
             steps {
                 sh '''
                     docker stop ${CONTAINER_NAME} || true
