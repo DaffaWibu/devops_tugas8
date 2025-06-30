@@ -2,7 +2,7 @@ pipeline {
     agent {
         docker {
             image 'php:8.2-cli-alpine'
-            args '-u 0:0' // Running as root in agent for setup purposes
+            args '-u 0:0' // Menjalankan sebagai user root di dalam container untuk izin instalasi
         }
     }
 
@@ -18,14 +18,13 @@ pipeline {
                 sh '''
                     echo "Preparing Docker CLI in agent container..."
                     # Minimal apk add untuk prasyarat docker-cli di Alpine
-                    # (curl, ca-certificates, gnupg, libressl-dev adalah untuk menginstal Docker CLI)
                     apk add --no-cache \
                         curl \
                         ca-certificates \
                         gnupg \
                         libressl-dev 
                     
-                    # Instal Docker CLI binary (versi stabil terbaru dari download.docker.com)
+                    # Instal Docker CLI binary (versi stabil terbaru)
                     curl -fsSL https://download.docker.com/linux/static/stable/x86_64/docker-26.1.3.tgz | tar -xz -C /usr/bin --strip-components=1
 
                     echo "Docker CLI installed in agent container."
@@ -41,9 +40,17 @@ pipeline {
 
         stage('Install Dependencies') {
             steps {
-                // Composer sudah ada di image php:8.2-cli-alpine, jadi tidak perlu instal ulang.
-                // Langsung jalankan composer install.
-                sh 'composer install --no-dev --prefer-dist --optimize-autoloader'
+                // Menginstal Composer secara eksplisit dan menempatkannya di /usr/local/bin
+                sh '''
+                    echo "Installing Composer in agent..."
+                    php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
+                    php composer-setup.php --install-dir=/usr/local/bin --filename=composer
+                    php -r "unlink('composer-setup.php');"
+                    echo "Composer installed in agent."
+                    
+                    # Instal PHP dependencies setelah Composer terinstal
+                    composer install --no-dev --prefer-dist --optimize-autoloader
+                '''
             }
             post {
                 failure {
@@ -54,8 +61,6 @@ pipeline {
 
         stage('Run Unit Tests') {
             steps {
-                // Menjalankan unit test menggunakan skrip 'test' dari composer.json
-                // Ini lebih andal dan akan menemukan PHPUnit yang diinstal oleh Composer.
                 sh 'composer run test'
             }
             post {
@@ -64,7 +69,6 @@ pipeline {
                 }
                 failure {
                     echo 'Tes gagal! Cek log untuk detail.'
-                    // exit 1 // Uncomment ini jika Anda ingin build gagal jika test gagal
                 }
             }
         }
