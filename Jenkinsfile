@@ -2,7 +2,7 @@ pipeline {
     agent {
         docker {
             image 'php:8.2-cli-alpine'
-            args '-u 0:0' // Menjalankan sebagai user root di dalam container untuk izin instalasi
+            args '-u 0:0' // Running as root in agent for setup purposes
         }
     }
 
@@ -17,14 +17,12 @@ pipeline {
             steps {
                 sh '''
                     echo "Preparing Docker CLI in agent container..."
-                    # Minimal apk add untuk prasyarat docker-cli di Alpine
                     apk add --no-cache \
                         curl \
                         ca-certificates \
                         gnupg \
                         libressl-dev 
                     
-                    # Instal Docker CLI binary (versi stabil terbaru)
                     curl -fsSL https://download.docker.com/linux/static/stable/x86_64/docker-26.1.3.tgz | tar -xz -C /usr/bin --strip-components=1
 
                     echo "Docker CLI installed in agent container."
@@ -40,7 +38,6 @@ pipeline {
 
         stage('Install Dependencies') {
             steps {
-                // Menginstal Composer secara eksplisit dan menempatkannya di /usr/local/bin
                 sh '''
                     echo "Installing Composer in agent..."
                     php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
@@ -48,7 +45,6 @@ pipeline {
                     php -r "unlink('composer-setup.php');"
                     echo "Composer installed in agent."
                     
-                    # Instal PHP dependencies setelah Composer terinstal
                     composer install --no-dev --prefer-dist --optimize-autoloader
                 '''
             }
@@ -61,7 +57,8 @@ pipeline {
 
         stage('Run Unit Tests') {
             steps {
-                sh 'composer run test'
+                // Perbaikan: Panggil PHPUnit secara eksplisit dengan interpreter PHP
+                sh 'php ./vendor/bin/phpunit --colors'
             }
             post {
                 success {
